@@ -1,10 +1,54 @@
 # ----------------------- Helper Functions to Implement ------------------------
+sample_normal <- function(n, mean=0, sd=1) {
+  set.seed(1337)
+  samples <- rnorm(n, mean=mean, sd=sd)
+  return(samples)
+}
 
+sample_normal_w_missing <- function(n, mean=0, sd=1, missing_frac=0.1) {
+  set.seed(1337)
+  samples <- rnorm(n, mean=mean, sd=sd)
+  missing <- rbinom(length(samples), 1, missing_frac)==1
+  samples[missing] <- NA
+  return(samples)
+}
+
+simulate_gene_expression <- function(num_samples, num_genes) {
+  set.seed(1337)
+  gene_exp <- matrix(
+    rnbinom(num_samples*num_genes, rlnorm(num_genes,meanlog = 3), prob=runif(num_genes)),
+    nrow=num_genes
+  )
+  return(gene_exp)
+}
+
+simulate_gene_expression_w_missing <- function(num_samples, num_genes, missing_frac=0.1) {
+  gene_exp <- simulate_gene_expression(num_samples, num_genes)
+  missing <- matrix(
+    rbinom(num_samples*num_genes, 1, missing_frac)==1,
+    nrow=num_genes
+  )
+  gene_exp[missing] <- NA
+  return(gene_exp)
+}
 #' Evaluate whether the argument is less than 2
-#'
+
+#I was confused if this was part of the assignment or not as it wasn't in the test cases
+
+#lessthantwo <- sample_normal(10)
+#print(lessthantwo>2)
+
 #' Returns TRUE if the numeric argument x is a prime number, otherwise returns
 #' FALSE
-#'
+
+#I was confused if this was part of the assignment or not as it wasn't in the test cases
+
+#install.packages("primes")
+#library("primes")
+
+#x <- sample_normal(10)
+#print(is_prime(x)) #function is_prime tests if x is a prime number
+
 #' @param x (numeric): the numeric value(s) to test
 #'
 #' @return logical value or vector indicating whether the numeric argument is less than 2
@@ -18,14 +62,17 @@
 #' less_than_zero(c(-1,0,1,2,3,4))
 #' [1] TRUE FALSE FALSE FALSE FALSE FALSE
 less_than_zero <- function(x) {
-    return(NULL)
-}
+    return(0 > x) #closes return
+} #closes function
+
+t_lessthan <- sample_normal(10)
+less_than_zero(t_lessthan)
 
 #' Evaluate whether the argument is between two numbers
 #'
 #' Returns TRUE if the numeric argument x is contained within the open interval
 #' (a, b), otherwise return FALSE.
-#'
+
 #' @param x (numeric): the numeric value(s) to test
 #' @param a (number): the lower bound
 #' @param b (number): the upper bound
@@ -44,8 +91,11 @@ less_than_zero <- function(x) {
 #' [2,]  TRUE FALSE FALSE
 #' [3,] FALSE FALSE FALSE
 is_between <- function(x, a, b) {
-    return(NULL)
-}
+  return(a < x & x < b) #closes return
+} #closes function
+
+t_between <- sample_normal(10)
+is_between(t_between, -10, 10)
 
 #' Return the values of the input vector that are not NA
 #'
@@ -61,8 +111,13 @@ is_between <- function(x, a, b) {
 #' rm_na(x)
 #' [1] 1 2 3
 rm_na <- function(x) {
-    return(NULL)
-}
+    return(
+      x[!is.na(x)] #get NA values using is.na in x, return x without them
+    ) #closes return
+} #closes function
+
+t_removena <- sample_normal_w_missing(15)
+rm_na(t_removena)
 
 #' Calculate the median of each row of a matrix
 #'
@@ -80,8 +135,13 @@ rm_na <- function(x) {
 #' [1] 1 4 7
 #' 
 row_medians <- function(x) {
-    return(NULL)
-}
+    return(
+      apply(x, MARGIN = 1, FUN = median) #apply (FUN) median to (MARGIN) rows 
+    ) #closes return
+} #closes function
+
+m_median <- m <- matrix(1:10, nrow=3, byrow=T) 
+row_medians(m_median)
 
 #' Evaluate each row of a matrix with a provided function
 #'
@@ -105,8 +165,13 @@ row_medians <- function(x) {
 #' summarize_rows(m, mean)
 #' [1] 2 5 8
 summarize_rows <- function(x, fn, na.rm=FALSE) {
-    return(NULL)
-}
+    return(
+      apply(x, MARGIN = 1, FUN = fn)
+    ) #closes return
+} #closes function
+
+m_fun <- matrix(1:9, nrow=3, byrow=T)
+summarize_rows(m_fun, mean)
 
 #' Summarize matrix rows into data frame
 #'
@@ -145,22 +210,71 @@ summarize_rows <- function(x, fn, na.rm=FALSE) {
 #' 3 -0.09040182 1.027559 -0.02774705 -3.026888 2.353087      130              54      0
 #' 4  0.09518138 1.030461  0.11294781 -3.409049 2.544992       90              72      0
 summarize_matrix <- function(x, na.rm=FALSE) {
-    return(NULL)
-}
+    return(
+      data.frame(
+        mean = apply(x, MARGIN = 1, FUN = mean), #mean
+        stdev = apply(x, MARGIN = 1, FUN = sd), #standard deviation
+        median = apply(x, MARGIN = 1, FUN = median), #median
+        min = apply(x, MARGIN = 1, FUN = min), #minimum
+        max = apply(x, MARGIN = 1, FUN = max), #maximum
+        
+        num_lt_0 = apply(x, MARGIN = 1, FUN = function(a) { #use a for nested function
+          return(sum(0 > a) #sum values less than 0 per row
+                 ) #closes return
+        }#closes function
+        ), #closes apply
+        
+        num_btw_1_and_5 = apply(x, MARGIN = 1, FUN = function(b) { #use b for nested function
+          return(sum(1 < b & b < 5) #sums values between 1-5 per row
+                 ) #closes return
+        } #closes function
+        ), #closes apply
+        
+        num_na = apply(x, MARGIN = 1, FUN = function(c) { #use c for nested function
+          return(sum(is.na(c)) #sums NAs per row
+                 ) #closes return
+        } #closes function
+          ) #closes apply
+        
+      ) #closes data frame
+    ) #closes return
+} #closes function
+
+m_summary <- matrix(1:9, nrow=3, byrow=T)
+m_test <- summarize_matrix(m_summary)
+
+m_test
 
 # ------------ Helper Functions Used By Assignment, You May Ignore ------------
 sample_normal <- function(n, mean=0, sd=1) {
-    return(NULL)
+  set.seed(1337)
+  samples <- rnorm(n, mean=mean, sd=sd)
+  return(samples)
 }
 
 sample_normal_w_missing <- function(n, mean=0, sd=1, missing_frac=0.1) {
-    return(NULL)
+  set.seed(1337)
+  samples <- rnorm(n, mean=mean, sd=sd)
+  missing <- rbinom(length(samples), 1, missing_frac)==1
+  samples[missing] <- NA
+  return(samples)
 }
 
 simulate_gene_expression <- function(num_samples, num_genes) {
-    return(NULL)
+  set.seed(1337)
+  gene_exp <- matrix(
+    rnbinom(num_samples*num_genes, rlnorm(num_genes,meanlog = 3), prob=runif(num_genes)),
+    nrow=num_genes
+  )
+  return(gene_exp)
 }
 
 simulate_gene_expression_w_missing <- function(num_samples, num_genes, missing_frac=0.1) {
-    return(NULL)
+  gene_exp <- simulate_gene_expression(num_samples, num_genes)
+  missing <- matrix(
+    rbinom(num_samples*num_genes, 1, missing_frac)==1,
+    nrow=num_genes
+  )
+  gene_exp[missing] <- NA
+  return(gene_exp)
 }
