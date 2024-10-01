@@ -276,5 +276,5 @@ simulate_gene_expression_w_missing <- function(num_samples, num_genes, missing_f
     nrow=num_genes
   )
   gene_exp[missing] <- NA
-  return(gene_exp)
+  return(gene_exp) 
 }
